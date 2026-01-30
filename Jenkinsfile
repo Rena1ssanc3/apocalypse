@@ -92,31 +92,12 @@ spec:
         }
 
         stage('Build Docker Image') {
-            steps {
-                container('kaniko') {
-                    echo 'Building Docker image with Kaniko...'
-                    script {
-                        sh """
-                            /kaniko/executor \
-                                --context=\${WORKSPACE} \
-                                --dockerfile=\${WORKSPACE}/Dockerfile \
-                                --destination=${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${DOCKER_IMAGE}:${DOCKER_TAG} \
-                                --destination=${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${DOCKER_IMAGE}:latest \
-                                --skip-tls-verify \
-                                --no-push
-                        """
-                    }
-                }
-            }
-        }
-
-        stage('Push Docker Image') {
             when {
                 branch 'main'
             }
             steps {
                 container('kaniko') {
-                    echo 'Pushing Docker image to Harbor...'
+                    echo 'Building and pushing Docker image with Kaniko...'
                     withCredentials([usernamePassword(credentialsId: 'harbor-credentials', usernameVariable: 'HARBOR_USER', passwordVariable: 'HARBOR_PASS')]) {
                         script {
                             sh """
