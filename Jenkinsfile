@@ -1,6 +1,7 @@
 pipeline {
     agent {
         kubernetes {
+            defaultContainer 'maven'
             yaml '''
 apiVersion: v1
 kind: Pod
@@ -12,8 +13,9 @@ spec:
   - name: maven
     image: maven:3.9-eclipse-temurin-21
     command:
-    - cat
-    tty: true
+    - sleep
+    args:
+    - infinity
     volumeMounts:
     - name: maven-cache
       mountPath: /root/.m2
@@ -21,6 +23,9 @@ spec:
     image: docker:24-dind
     securityContext:
       privileged: true
+    env:
+    - name: DOCKER_TLS_CERTDIR
+      value: ""
     volumeMounts:
     - name: docker-sock
       mountPath: /var/run
