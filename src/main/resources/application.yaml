@@ -1,0 +1,37 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: apocalypse
+
+  # Active profile (can be overridden by environment variable)
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  # Flyway Configuration (common for all profiles)
+  flyway:
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  # Disable Spring Security Auto-Configuration
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+
+# Management endpoints for health checks
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+
+# Logging (default level)
+logging:
+  level:
+    root: INFO
+    com.byterevo.apocalypse: INFO

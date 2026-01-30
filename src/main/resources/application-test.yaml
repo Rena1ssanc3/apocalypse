@@ -1,0 +1,32 @@
+spring:
+  # H2 Database Configuration for Testing
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MySQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  # H2 Console disabled in test
+  h2:
+    console:
+      enabled: false
+
+  # JPA/Hibernate Configuration
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+  # Flyway Configuration
+  flyway:
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+# Logging
+logging:
+  level:
+    com.byterevo.apocalypse: INFO
+    org.springframework.web: INFO
