@@ -11,13 +11,6 @@ spec:
     command:
     - cat
     tty: true
-    resources:
-      requests:
-        memory: "1Gi"
-        cpu: "1"
-      limits:
-        memory: "2Gi"
-        cpu: "2"
 '''
         }
     }
