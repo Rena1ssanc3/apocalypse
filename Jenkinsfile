@@ -1,18 +1,8 @@
 pipeline {
-    agent {
-        kubernetes {
-            yaml '''
-apiVersion: v1
-kind: Pod
-spec:
-  containers:
-  - name: maven
-    image: maven:3.9-eclipse-temurin-21
-    command:
-    - cat
-    tty: true
-'''
-        }
+    agent any
+
+    tools {
+        maven 'Maven-3.9'
     }
 
     environment {
@@ -32,19 +22,15 @@ spec:
 
         stage('Build') {
             steps {
-                container('maven') {
-                    echo 'Building application...'
-                    sh './mvnw clean compile -DskipTests'
-                }
+                echo 'Building application...'
+                sh './mvnw clean compile -DskipTests'
             }
         }
 
         stage('Test') {
             steps {
-                container('maven') {
-                    echo 'Running tests...'
-                    sh './mvnw test'
-                }
+                echo 'Running tests...'
+                sh './mvnw test'
             }
             post {
                 always {
@@ -60,10 +46,8 @@ spec:
 
         stage('Package') {
             steps {
-                container('maven') {
-                    echo 'Packaging application...'
-                    sh './mvnw package -DskipTests'
-                }
+                echo 'Packaging application...'
+                sh './mvnw package -DskipTests'
             }
         }
 
