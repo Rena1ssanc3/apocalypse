@@ -96,7 +96,7 @@ spec:
     post {
         always {
             echo 'Cleaning up workspace...'
-            cleanWs()
+            deleteDir()
         }
         success {
             echo 'Pipeline completed successfully!'
