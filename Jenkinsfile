@@ -1,12 +1,43 @@
 pipeline {
-    agent any
+    agent {
+        kubernetes {
+            yaml '''
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    jenkins: agent
+spec:
+  containers:
+  - name: maven
+    image: maven:3.9-eclipse-temurin-21
+    command:
+    - cat
+    tty: true
+    volumeMounts:
+    - name: maven-cache
+      mountPath: /root/.m2
+  - name: docker
+    image: docker:24-dind
+    securityContext:
+      privileged: true
+    volumeMounts:
+    - name: docker-sock
+      mountPath: /var/run
+  volumes:
+  - name: maven-cache
+    emptyDir: {}
+  - name: docker-sock
+    emptyDir: {}
+'''
+        }
+    }
 
     environment {
         DOCKER_IMAGE = 'apocalypse'
         DOCKER_TAG = "${env.BUILD_NUMBER}"
         DOCKER_REGISTRY = 'docker.io'
         SPRING_PROFILES_ACTIVE = 'test'
-        JAVA_HOME = '/usr/lib/jvm/java-21-openjdk-amd64'
     }
 
     stages {
@@ -17,41 +48,21 @@ pipeline {
             }
         }
 
-        stage('Verify Java') {
-            steps {
-                echo 'Verifying Java version...'
-                sh '''
-                    echo "JAVA_HOME: $JAVA_HOME"
-                    if [ -d "$JAVA_HOME" ]; then
-                        export PATH="$JAVA_HOME/bin:$PATH"
-                        java -version
-                    else
-                        echo "Java 21 not found at $JAVA_HOME"
-                        echo "Available Java installations:"
-                        ls -la /usr/lib/jvm/ || echo "No JVM directory found"
-                        exit 1
-                    fi
-                '''
-            }
-        }
-
         stage('Build') {
             steps {
-                echo 'Building application...'
-                sh '''
-                    export PATH="$JAVA_HOME/bin:$PATH"
-                    ./mvnw clean compile -DskipTests
-                '''
+                container('maven') {
+                    echo 'Building application...'
+                    sh './mvnw clean compile -DskipTests'
+                }
             }
         }
 
         stage('Test') {
             steps {
-                echo 'Running tests...'
-                sh '''
-                    export PATH="$JAVA_HOME/bin:$PATH"
-                    ./mvnw test
-                '''
+                container('maven') {
+                    echo 'Running tests...'
+                    sh './mvnw test'
+                }
             }
             post {
                 always {
@@ -67,11 +78,10 @@ pipeline {
 
         stage('Package') {
             steps {
-                echo 'Packaging application...'
-                sh '''
-                    export PATH="$JAVA_HOME/bin:$PATH"
-                    ./mvnw package -DskipTests
-                '''
+                container('maven') {
+                    echo 'Packaging application...'
+                    sh './mvnw package -DskipTests'
+                }
             }
         }
 
@@ -90,10 +100,12 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                echo 'Building Docker image...'
-                script {
-                    docker.build("${DOCKER_IMAGE}:${DOCKER_TAG}")
-                    docker.build("${DOCKER_IMAGE}:latest")
+                container('docker') {
+                    echo 'Building Docker image...'
+                    sh """
+                        docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
+                        docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
+                    """
                 }
             }
         }
@@ -103,11 +115,14 @@ pipeline {
                 branch 'main'
             }
             steps {
-                echo 'Pushing Docker image to registry...'
-                script {
-                    docker.withRegistry("https://${DOCKER_REGISTRY}", 'docker-credentials') {
-                        docker.image("${DOCKER_IMAGE}:${DOCKER_TAG}").push()
-                        docker.image("${DOCKER_IMAGE}:latest").push()
+                container('docker') {
+                    echo 'Pushing Docker image to registry...'
+                    withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh """
+                            echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin ${DOCKER_REGISTRY}
+                            docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+                            docker push ${DOCKER_IMAGE}:latest
+                        """
                     }
                 }
             }
