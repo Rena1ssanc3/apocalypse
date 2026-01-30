@@ -1,5 +1,19 @@
 pipeline {
-    agent any
+    agent {
+        kubernetes {
+            yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: maven
+    image: maven:3.9-eclipse-temurin-21
+    command:
+    - cat
+    tty: true
+'''
+        }
+    }
 
     environment {
         DOCKER_IMAGE = 'apocalypse'
@@ -18,15 +32,19 @@ pipeline {
 
         stage('Build') {
             steps {
-                echo 'Building application...'
-                sh './mvnw clean compile -DskipTests'
+                container('maven') {
+                    echo 'Building application...'
+                    sh './mvnw clean compile -DskipTests'
+                }
             }
         }
 
         stage('Test') {
             steps {
-                echo 'Running tests...'
-                sh './mvnw test'
+                container('maven') {
+                    echo 'Running tests...'
+                    sh './mvnw test'
+                }
             }
             post {
                 always {
@@ -42,8 +60,10 @@ pipeline {
 
         stage('Package') {
             steps {
-                echo 'Packaging application...'
-                sh './mvnw package -DskipTests'
+                container('maven') {
+                    echo 'Packaging application...'
+                    sh './mvnw package -DskipTests'
+                }
             }
         }
 
