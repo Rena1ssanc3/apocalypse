@@ -48,12 +48,24 @@ spec:
             }
             post {
                 always {
-                    junit '**/target/surefire-reports/*.xml'
-                    jacoco(
-                        execPattern: '**/target/jacoco.exec',
-                        classPattern: '**/target/classes',
-                        sourcePattern: '**/src/main/java'
-                    )
+                    script {
+                        // Publish test results if JUnit plugin is available
+                        try {
+                            step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/*.xml'])
+                        } catch (Exception e) {
+                            echo "JUnit plugin not available: ${e.message}"
+                        }
+                        // Publish code coverage if JaCoCo plugin is available
+                        try {
+                            step([$class: 'JacocoPublisher',
+                                execPattern: '**/target/jacoco.exec',
+                                classPattern: '**/target/classes',
+                                sourcePattern: '**/src/main/java'
+                            ])
+                        } catch (Exception e) {
+                            echo "JaCoCo plugin not available: ${e.message}"
+                        }
+                    }
                 }
             }
         }
