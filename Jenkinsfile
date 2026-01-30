@@ -95,15 +95,7 @@ spec:
 
     post {
         always {
-            script {
-                try {
-                    echo 'Cleaning up workspace...'
-                    // Try shell-based cleanup first for better permission handling
-                    sh 'rm -rf * || true'
-                } catch (Exception e) {
-                    echo "Workspace cleanup failed: ${e.message}"
-                }
-            }
+            echo 'Build completed. Workspace will be cleaned up when pod terminates.'
         }
         success {
             echo 'Pipeline completed successfully!'
