@@ -6,6 +6,7 @@ pipeline {
         DOCKER_TAG = "${env.BUILD_NUMBER}"
         DOCKER_REGISTRY = 'docker.io'
         SPRING_PROFILES_ACTIVE = 'test'
+        JAVA_HOME = '/usr/lib/jvm/java-21-openjdk-amd64'
     }
 
     stages {
@@ -16,15 +17,30 @@ pipeline {
             }
         }
 
+        stage('Verify Java') {
+            steps {
+                echo 'Verifying Java version...'
+                sh '''
+                    echo "JAVA_HOME: $JAVA_HOME"
+                    if [ -d "$JAVA_HOME" ]; then
+                        export PATH="$JAVA_HOME/bin:$PATH"
+                        java -version
+                    else
+                        echo "Java 21 not found at $JAVA_HOME"
+                        echo "Available Java installations:"
+                        ls -la /usr/lib/jvm/ || echo "No JVM directory found"
+                        exit 1
+                    fi
+                '''
+            }
+        }
+
         stage('Build') {
             steps {
                 echo 'Building application...'
                 sh '''
-                    docker run --rm \
-                        -v "$(pwd)":/workspace \
-                        -w /workspace \
-                        maven:3.9-eclipse-temurin-21 \
-                        ./mvnw clean compile -DskipTests
+                    export PATH="$JAVA_HOME/bin:$PATH"
+                    ./mvnw clean compile -DskipTests
                 '''
             }
         }
@@ -33,11 +49,8 @@ pipeline {
             steps {
                 echo 'Running tests...'
                 sh '''
-                    docker run --rm \
-                        -v "$(pwd)":/workspace \
-                        -w /workspace \
-                        maven:3.9-eclipse-temurin-21 \
-                        ./mvnw test
+                    export PATH="$JAVA_HOME/bin:$PATH"
+                    ./mvnw test
                 '''
             }
             post {
@@ -56,11 +69,8 @@ pipeline {
             steps {
                 echo 'Packaging application...'
                 sh '''
-                    docker run --rm \
-                        -v "$(pwd)":/workspace \
-                        -w /workspace \
-                        maven:3.9-eclipse-temurin-21 \
-                        ./mvnw package -DskipTests
+                    export PATH="$JAVA_HOME/bin:$PATH"
+                    ./mvnw package -DskipTests
                 '''
             }
         }
