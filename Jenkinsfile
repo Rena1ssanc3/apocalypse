@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    tools {
+        jdk 'JDK-21'
+    }
+
     environment {
         DOCKER_IMAGE = 'apocalypse'
         DOCKER_TAG = "${env.BUILD_NUMBER}"
