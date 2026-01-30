@@ -34,7 +34,7 @@ spec:
             steps {
                 container('maven') {
                     echo 'Building application...'
-                    sh './mvnw clean compile -DskipTests'
+                    sh 'mvn clean compile -DskipTests'
                 }
             }
         }
@@ -43,7 +43,7 @@ spec:
             steps {
                 container('maven') {
                     echo 'Running tests...'
-                    sh './mvnw test'
+                    sh 'mvn test'
                 }
             }
             post {
@@ -62,7 +62,7 @@ spec:
             steps {
                 container('maven') {
                     echo 'Packaging application...'
-                    sh './mvnw package -DskipTests'
+                    sh 'mvn package -DskipTests'
                 }
             }
         }
