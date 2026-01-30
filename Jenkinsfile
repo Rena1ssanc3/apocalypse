@@ -1,53 +1,23 @@
 pipeline {
     agent {
         kubernetes {
-            defaultContainer 'maven'
             yaml '''
 apiVersion: v1
 kind: Pod
-metadata:
-  labels:
-    jenkins: agent
 spec:
   containers:
   - name: maven
     image: maven:3.9-eclipse-temurin-21
     command:
-    - sleep
-    args:
-    - infinity
+    - cat
+    tty: true
     resources:
       requests:
-        memory: "512Mi"
-        cpu: "500m"
+        memory: "1Gi"
+        cpu: "1"
       limits:
         memory: "2Gi"
         cpu: "2"
-    volumeMounts:
-    - name: maven-cache
-      mountPath: /root/.m2
-  - name: docker
-    image: docker:24-dind
-    securityContext:
-      privileged: true
-    resources:
-      requests:
-        memory: "512Mi"
-        cpu: "500m"
-      limits:
-        memory: "2Gi"
-        cpu: "2"
-    env:
-    - name: DOCKER_TLS_CERTDIR
-      value: ""
-    volumeMounts:
-    - name: docker-storage
-      mountPath: /var/lib/docker
-  volumes:
-  - name: maven-cache
-    emptyDir: {}
-  - name: docker-storage
-    emptyDir: {}
 '''
         }
     }
@@ -113,55 +83,6 @@ spec:
                     //     sh './mvnw sonar:sonar'
                     // }
                     echo 'Code quality analysis skipped (configure SonarQube if needed)'
-                }
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                container('docker') {
-                    echo 'Building Docker image...'
-                    sh """
-                        docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
-                        docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
-                    """
-                }
-            }
-        }
-
-        stage('Push Docker Image') {
-            when {
-                branch 'main'
-            }
-            steps {
-                container('docker') {
-                    echo 'Pushing Docker image to registry...'
-                    withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                        sh """
-                            echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin ${DOCKER_REGISTRY}
-                            docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
-                            docker push ${DOCKER_IMAGE}:latest
-                        """
-                    }
-                }
-            }
-        }
-
-        stage('Deploy to Kubernetes') {
-            when {
-                branch 'main'
-            }
-            steps {
-                echo 'Deploying to Kubernetes...'
-                script {
-                    // Deploy using Helm
-                    sh """
-                        helm upgrade --install apocalypse ./helm/apocalypse \
-                            --set image.tag=${DOCKER_TAG} \
-                            --namespace production \
-                            --create-namespace \
-                            --wait
-                    """
                 }
             }
         }
