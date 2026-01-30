@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    tools {
-        maven 'Maven-3.9'
-    }
-
     environment {
         DOCKER_IMAGE = 'apocalypse'
         DOCKER_TAG = "${env.BUILD_NUMBER}"
