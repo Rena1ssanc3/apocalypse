@@ -95,8 +95,15 @@ spec:
 
     post {
         always {
-            echo 'Cleaning up workspace...'
-            deleteDir()
+            script {
+                try {
+                    echo 'Cleaning up workspace...'
+                    // Try shell-based cleanup first for better permission handling
+                    sh 'rm -rf * || true'
+                } catch (Exception e) {
+                    echo "Workspace cleanup failed: ${e.message}"
+                }
+            }
         }
         success {
             echo 'Pipeline completed successfully!'
