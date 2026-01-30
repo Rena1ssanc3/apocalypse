@@ -1,10 +1,5 @@
 pipeline {
-    agent {
-        docker {
-            image 'maven:3.9-eclipse-temurin-21'
-            args '-v /var/run/docker.sock:/var/run/docker.sock -v $HOME/.m2:/root/.m2'
-        }
-    }
+    agent any
 
     environment {
         DOCKER_IMAGE = 'apocalypse'
@@ -24,14 +19,26 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Building application...'
-                sh './mvnw clean compile -DskipTests'
+                sh '''
+                    docker run --rm \
+                        -v "$(pwd)":/workspace \
+                        -w /workspace \
+                        maven:3.9-eclipse-temurin-21 \
+                        ./mvnw clean compile -DskipTests
+                '''
             }
         }
 
         stage('Test') {
             steps {
                 echo 'Running tests...'
-                sh './mvnw test'
+                sh '''
+                    docker run --rm \
+                        -v "$(pwd)":/workspace \
+                        -w /workspace \
+                        maven:3.9-eclipse-temurin-21 \
+                        ./mvnw test
+                '''
             }
             post {
                 always {
@@ -48,7 +55,13 @@ pipeline {
         stage('Package') {
             steps {
                 echo 'Packaging application...'
-                sh './mvnw package -DskipTests'
+                sh '''
+                    docker run --rm \
+                        -v "$(pwd)":/workspace \
+                        -w /workspace \
+                        maven:3.9-eclipse-temurin-21 \
+                        ./mvnw package -DskipTests
+                '''
             }
         }
 
