@@ -16,6 +16,13 @@ spec:
     - sleep
     args:
     - infinity
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "500m"
+      limits:
+        memory: "2Gi"
+        cpu: "2"
     volumeMounts:
     - name: maven-cache
       mountPath: /root/.m2
@@ -23,16 +30,23 @@ spec:
     image: docker:24-dind
     securityContext:
       privileged: true
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "500m"
+      limits:
+        memory: "2Gi"
+        cpu: "2"
     env:
     - name: DOCKER_TLS_CERTDIR
       value: ""
     volumeMounts:
-    - name: docker-sock
-      mountPath: /var/run
+    - name: docker-storage
+      mountPath: /var/lib/docker
   volumes:
   - name: maven-cache
     emptyDir: {}
-  - name: docker-sock
+  - name: docker-storage
     emptyDir: {}
 '''
         }
